@@ -19,6 +19,41 @@ USAGE:
   In other files, just include the header without the macro.
 
 EXAMPLE:
+  - serialization
+  ```c
+    cson_node_t root = cson_create_object(NULL);
+    cson_append(&root, cson_create_string("name", "John Doe"));
+    cson_append(&root, cson_create_number("age", 28));
+    cson_write(&root, stdout):
+  ```
+
+  ```console
+    output:
+    {
+        "name": "John Doe",
+        "age": 28
+    }
+  ```
+
+  - deserialization
+  ```c
+    static const char *json_str = "{\n"
+    "  \"name\": \"Jane Smith\",\n"
+    "  \"age\": 32,\n"
+    "  \"occupation\": \"Software Engineer\",\n"
+    "  \"married\": true,\n"
+    "  \"skills\": [\"JavaScript\", \"Python\", \"C++\"]\n"
+    "}";
+
+    cson_node_t root = cson_load_buffer(json_str);
+    cson_node_t *age_node = cson_query(&root, "age");
+    printf("age: %d\n", (int) cson_to_number(age_node));
+  ```
+
+  ```console
+    output:
+    age: 32
+  ```
 
 LICENSE:
   See the end of this file for further details.
@@ -94,13 +129,13 @@ typedef struct {
 // @item: new item
 CSONDEF void cson_append(cson_node_t *node, cson_node_t item);
 
-// cson_remove_with_key - remove item from node with key
+// cson_remove_with_key - remove item from node on key
 // @node: must be object
 // @key: removed node key (should not be NULL)
 // Note: uses swap-and-pop deletion, which does not preserve element order
 CSONDEF void cson_remove_with_key(cson_node_t *node, const char *key);
 
-// cson_remove_with_idx - remove item from node with index
+// cson_remove_with_idx - remove item from node on index
 // @node: must be array
 // @key: removed node index
 // Note: uses swap-and-pop deletion, which does not preserve element order
@@ -133,12 +168,12 @@ CSONDEF cson_node_t cson_load_file(const char *path);
 // cson_write - output the nodes tree into file pointer
 // @root: root node (should be a object node)
 // @f: output file pointer
-CSONDEF void cson_write(cson_node_t *root, FILE *f);
+CSONDEF void cson_write(const cson_node_t *root, FILE *f);
 
 // cson_generate_file - output to a file (create if not exists)
 // @root: root node (should be a object node)
 // @path: file path
-CSONDEF void cson_generate_file(cson_node_t *root, const char *path);
+CSONDEF void cson_generate_file(const cson_node_t *root, const char *path);
 
 // cson_free - free the memory
 // @root: root node
@@ -149,14 +184,14 @@ CSONDEF void cson_free(cson_node_t *root);
 // @key: member key (should not be NULL)
 // Note: only query one layer, and just return the first matched result
 // Return: the node pointer, NULL if not exists
-CSONDEF cson_node_t *cson_query(cson_node_t *root, const char *key);
+CSONDEF cson_node_t *cson_query(const cson_node_t *root, const char *key);
 
 // cson_to_xxx - get the node value
-CSONDEF cson_nodes_t cson_to_object(cson_node_t *node);
-CSONDEF cson_nodes_t cson_to_array(cson_node_t *node);
-CSONDEF double cson_to_number(cson_node_t *node);
-CSONDEF bool cson_to_boolean(cson_node_t *node);
-CSONDEF char *cson_to_string(cson_node_t *node);
+CSONDEF cson_nodes_t cson_to_object(const cson_node_t *node);
+CSONDEF cson_nodes_t cson_to_array(const cson_node_t *node);
+CSONDEF double cson_to_number(const cson_node_t *node);
+CSONDEF bool cson_to_boolean(const cson_node_t *node);
+CSONDEF const char *cson_to_string(const cson_node_t *node);
 
 #ifdef __cplusplus
 }
@@ -514,7 +549,7 @@ CSONDEF cson_node_t cson_load_file(const char *path) {
     return root;
 }
 
-static void cson__dump_value(cson_node_t *node, FILE *f, size_t level, bool indent);
+static void cson__dump_value(const cson_node_t *node, FILE *f, size_t level, bool indent);
 static void cson__dump_indent(FILE *f, size_t level);
 
 // cson__dump_pair - output pair (key and value)
@@ -522,7 +557,7 @@ static void cson__dump_indent(FILE *f, size_t level);
 // @f: output file pointer
 // @level: indent level
 // @comma: write comma or not
-static void cson__dump_pair(cson_node_t *node, FILE *f, size_t level, bool comma) {
+static void cson__dump_pair(const cson_node_t *node, FILE *f, size_t level, bool comma) {
     cson__dump_indent(f, level);
     fprintf(f, "\"%s\": ", node->key);
     cson__dump_value(node, f, level, false);
@@ -534,7 +569,7 @@ static void cson__dump_pair(cson_node_t *node, FILE *f, size_t level, bool comma
 // @node: current node
 // @f: output file pointer
 // @indent: write indent or not
-static void cson__dump_value(cson_node_t *node, FILE *f, size_t level, bool indent) {
+static void cson__dump_value(const cson_node_t *node, FILE *f, size_t level, bool indent) {
     if (indent) cson__dump_indent(f, level);
 
     switch (node->kind) {
@@ -596,11 +631,11 @@ static void cson__dump_indent(FILE *f, size_t level) {
     }
 }
 
-CSONDEF void cson_write(cson_node_t *root, FILE *f) {
+CSONDEF void cson_write(const cson_node_t *root, FILE *f) {
     cson__dump_value(root, f, 0, true);
 }
 
-CSONDEF void cson_generate_file(cson_node_t *root, const char *path) {
+CSONDEF void cson_generate_file(const cson_node_t *root, const char *path) {
     FILE *f = fopen(path, "w");
     if (!f) cson__fatal("failed to open file '%s'", path);
     cson_write(root, f);
@@ -630,7 +665,7 @@ CSONDEF void cson_free(cson_node_t *root) {
     }
 }
 
-CSONDEF cson_node_t *cson_query(cson_node_t *root, const char *key) {
+CSONDEF cson_node_t *cson_query(const cson_node_t *root, const char *key) {
     if (root->kind != CSON_OBJECT) cson__fatal("query node should be an object");
     if (!key) return NULL;
     for (size_t i = 0; i < root->as.container.len; i++) {
@@ -640,27 +675,27 @@ CSONDEF cson_node_t *cson_query(cson_node_t *root, const char *key) {
     return NULL;
 }
 
-CSONDEF cson_nodes_t cson_to_object(cson_node_t *node) {
+CSONDEF cson_nodes_t cson_to_object(const cson_node_t *node) {
     if (node->kind != CSON_OBJECT) cson__fatal("should be an object node");
     return node->as.container;
 }
 
-CSONDEF cson_nodes_t cson_to_array(cson_node_t *node) {
+CSONDEF cson_nodes_t cson_to_array(const cson_node_t *node) {
     if (node->kind != CSON_ARRAY) cson__fatal("should be an array node");
     return node->as.container;
 }
 
-CSONDEF double cson_to_number(cson_node_t *node) {
+CSONDEF double cson_to_number(const cson_node_t *node) {
     if (node->kind != CSON_NUMBER) cson__fatal("should be an number node");
     return node->as.number;
 }
 
-CSONDEF bool cson_to_boolean(cson_node_t *node) {
+CSONDEF bool cson_to_boolean(const cson_node_t *node) {
     if (node->kind != CSON_BOOLEAN) cson__fatal("should be an boolean node");
     return node->as.boolean;
 }
 
-CSONDEF char *cson_to_string(cson_node_t *node) {
+CSONDEF const char *cson_to_string(const cson_node_t *node) {
     if (node->kind != CSON_STRING) cson__fatal("should be an string node");
     return node->as.string;
 }
