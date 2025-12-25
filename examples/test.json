@@ -1,0 +1,60 @@
+{
+  "api": {
+    "status": "success",
+    "code": 200,
+    "data": {
+      "user": {
+        "id": 12345,
+        "name": "John Doe",
+        "profile": {
+          "age": 30,
+          "address": {
+            "city": "New York",
+            "zipcode": "10001"
+          }
+        },
+        "hobbies": ["reading", "coding", "gaming"],
+        "preferences": {
+          "theme": "dark",
+          "notifications": true
+        }
+      },
+      "posts": [
+        {
+          "id": 1,
+          "title": "Hello World",
+          "tags": ["tech", "hello"],
+          "metadata": {
+            "created": "2024-01-15",
+            "author": {
+              "id": 12345,
+              "role": "admin"
+            }
+          }
+        },
+        {
+          "id": 2,
+          "title": "JSON Tutorial",
+          "tags": ["tutorial", "json"],
+          "metadata": {
+            "created": "2024-01-14",
+            "author": {
+              "id": 12345,
+              "role": "admin"
+            }
+          }
+        }
+      ],
+      "stats": {
+        "visitors": 1000,
+        "active_users": [12345, 23456, 34567]
+      }
+    },
+    "error": null,
+    "pagination": {
+      "current": 1,
+      "total": 10,
+      "next": "https://api.example.com/page=2"
+    }
+  }
+}
